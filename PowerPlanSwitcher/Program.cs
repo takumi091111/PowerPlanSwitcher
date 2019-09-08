@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace PowerPlanSwitcher
+﻿namespace PowerPlanSwitcher
 {
     class Program
     {

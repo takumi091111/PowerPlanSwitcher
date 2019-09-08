@@ -47,7 +47,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Client.cs" />
+    <Compile Include="Parser.cs" />
     <Compile Include="PowerPlan.cs" />
+    <Compile Include="PowerPlanManager.cs" />
     <Compile Include="PowerProf.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -1,5 +1,5 @@
-﻿using System;
-using CommandLine;
+﻿using CommandLine;
+using System;
 using System.Linq;
 
 namespace PowerPlanSwitcher
@@ -7,52 +7,74 @@ namespace PowerPlanSwitcher
     class Client
     {
         string[] args;
-        bool isImmediate;
 
         public Client(string[] args)
         {
             this.args = args;
-            this.isImmediate = (0 < args.Length);
-        }
-
-        public class Options
-        {
-            [Option('g', "guid", Required = false, HelpText = "変更したい電源プランのGUID")]
-            public string Guid { get; set; }
         }
 
         public void Run()
         {
-            if (this.isImmediate)
+            if (0 < args.Length)
             {
                 ImmediateMode();
                 return;
             }
+
             InteractiveMode();
         }
 
         private void ImmediateMode()
         {
-            PowerPlan[] availablePlans = PowerPlan.GetPowerPlans();
+            PowerPlan[] availablePlans = PowerPlanManager.GetPowerPlans();
 
-            Parser.Default.ParseArguments<Options>(this.args)
+            CommandLine.Parser.Default.ParseArguments<Parser.Options>(args)
                 .WithParsed(o =>
                 {
-                    bool isValidGuid = Guid.TryParse(o.Guid, out Guid guid);
-                    if (!isValidGuid) return;
+                    if (o.Guid != null && o.Plan != null) return;
 
-                    PowerPlan[] searchResult = availablePlans.Where(p => p.Guid == guid).ToArray();
-                    bool planExists = 0 < searchResult.Length;
-                    if (!planExists) return;
+                    if (o.Guid != null)
+                    {
+                        bool isValidGuid = Guid.TryParse(o.Guid, out Guid guid);
+                        if (!isValidGuid) return;
 
-                    PowerPlan.PowerSetActiveScheme(guid);
+                        PowerPlan[] searchResult = availablePlans.Where(p => p.Guid == guid).ToArray();
+                        bool planExists = 0 < searchResult.Length;
+                        if (!planExists) return;
+
+                        PowerPlanManager.PowerSetActiveScheme(guid);
+                        return;
+                    }
+
+                    if (o.Plan != null)
+                    {
+                        PowerPlan plan;
+
+                        switch (o.Plan)
+                        {
+                            case "powersave":
+                                plan = PowerPlan.POWERSAVE;
+                                break;
+                            case "balanced":
+                                plan = PowerPlan.BALANCED;
+                                break;
+                            case "performance":
+                                plan = PowerPlan.PERFORMANCE;
+                                break;
+                            default:
+                                return;
+                        }
+
+                        PowerPlanManager.PowerSetActiveScheme(plan.Guid);
+                        return;
+                    }
                 });
         }
 
         private void InteractiveMode()
         {
-            PowerPlan[] availablePlans = PowerPlan.GetPowerPlans();
-            PowerPlan currentPlan = PowerPlan.GetCurrentPowerPlan();
+            PowerPlan[] availablePlans = PowerPlanManager.GetPowerPlans();
+            PowerPlan currentPlan = PowerPlanManager.GetCurrentPowerPlan();
 
             Console.WriteLine($"現在の電源プラン: {currentPlan.Name} ({currentPlan.Guid})\n");
 
@@ -67,7 +89,7 @@ namespace PowerPlanSwitcher
             if (result <= 0 && availablePlans.Length < result) return;
 
             PowerPlan selectedPlan = availablePlans[result - 1];
-            PowerPlan.PowerSetActiveScheme(selectedPlan.Guid);
+            PowerPlanManager.PowerSetActiveScheme(selectedPlan.Guid);
 
             Console.WriteLine($"\n{selectedPlan.Name}へ変更しました。");
         }
